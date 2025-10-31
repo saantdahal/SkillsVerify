@@ -4,6 +4,7 @@ import hashlib
 import json
 from django.core.cache import cache
 
+# SkillAnalyzer class to analyze GitHub data and verify skills:
 class SkillAnalyzer:
     def __init__(self):
         genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -23,6 +24,7 @@ class SkillAnalyzer:
             key = f"skill_{hashlib.md5(key.encode()).hexdigest()}"
         return key
     
+    # Analyze GitHub data to extract skills using AI, with caching
     def analyze_github_skills(self, github_data):
         """Use AI to analyze GitHub data and extract skills with caching"""
         # Create cache key based on essential GitHub data
@@ -87,7 +89,8 @@ class SkillAnalyzer:
         except Exception as e:
             print(f"Error using Gemini API: {e}")
             return []
-    
+
+# Verify skills by comparing resume skills with GitHub skills using AI, with caching
     def verify_skills_with_llm(self, resume_skills, github_skills):
         """Use LLM to intelligently compare resume skills with GitHub skills, with caching"""
         # Create cache key based on resume skills and GitHub skills
@@ -156,6 +159,7 @@ class SkillAnalyzer:
             # Fallback to basic verification
             return self.basic_skill_verification(resume_skills, github_skills)
     
+    # basic skill verification method:
     def basic_skill_verification(self, resume_skills, github_skills):
         """Basic fallback method for skill verification"""
         # Convert to lowercase for case-insensitive comparison
@@ -178,7 +182,7 @@ class SkillAnalyzer:
             'verification_percentage': len(common_skills) / len(resume_skills) * 100 if resume_skills else 0,
             'explanation': "Basic comparison performed. This is a fallback method."
         }
-    
+    # Generate a hash of verified skills for blockchain storage
     def generate_verification_hash(self, github_username, verified_skills):
         """Generate a hash of verified skills that can be stored on blockchain"""
         skills_string = ",".join(sorted([skill.lower() for skill in verified_skills]))
