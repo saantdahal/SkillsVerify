@@ -3,11 +3,21 @@ import PyPDF2
 import re
 import io
 from django.conf import settings
-import google.generativeai as genai
+import requests
 import hashlib
 from django.core.cache import cache
 
 class ResumeParser:
+    def __init__(self):
+        self.api_key = settings.OPENROUTER_API_KEY
+        self.base_url = "https://openrouter.ai/api/v1"
+        self.model = "deepseek/deepseek-chat"
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://trustchain-ibriz.vercel.app",  # Optional
+            "X-Title": "TrustChain Skills Verification",  # Optional
+        }
     def extract_text_from_pdf(self, pdf_file):
         """Extract text content from PDF file"""
         pdf_reader = PyPDF2.PdfReader(pdf_file)
@@ -37,9 +47,6 @@ class ResumeParser:
             print(f"Cache hit: {cache_key}")
             return cached_skills
             
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-pro-latest')
-        
         prompt = f"""
         Extract all technical skills, programming languages, frameworks, and technologies 
         mentioned in this resume. Format the output as a JSON list of skills.
@@ -51,8 +58,22 @@ class ResumeParser:
         """
         
         try:
-            response = model.generate_content(prompt)
-            skills_text = response.text.strip()
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.1
+            }
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=self.headers,
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            result = response.json()
+            skills_text = result["choices"][0]["message"]["content"].strip()
             
             # Clean up the response to ensure it's valid JSON format
             skills_text = skills_text.replace("```json", "").replace("```", "").strip()
@@ -70,7 +91,7 @@ class ResumeParser:
                 print("Error parsing AI response to JSON")
                 return []
         except Exception as e:
-            print(f"Error using Gemini API: {e}")
+            print(f"Error using DeepSeek API: {e}")
             return []
     
     def parse_resume(self, pdf_file):

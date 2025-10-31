@@ -126,7 +126,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # API Keys and Configuration
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+OPENROUTER_API_KEY = os.getenv('DEEPSEEK_API_KEY')  # Using DEEPSEEK_API_KEY env var for backward compatibility
 
 CACHES = {
     'default': {
