@@ -90,7 +90,6 @@ class SkillAnalyzer:
     
     def verify_skills_with_llm(self, resume_skills, github_skills):
         """Use LLM to intelligently compare resume skills with GitHub skills, with caching"""
-        # Create cache key based on resume skills and GitHub skills
         cache_key = self._get_cache_key("verify_skills_llm", resume_skills, github_skills)
         cached_result = cache.get(cache_key)
         
