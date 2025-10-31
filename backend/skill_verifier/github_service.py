@@ -9,7 +9,7 @@ class GitHubService:
     def __init__(self, username):
         self.username = username
         self.headers = {'Authorization': f'token {settings.GITHUB_TOKEN}'} if settings.GITHUB_TOKEN else {}
-        
+        # Generate a cache key based on method name and arguments
     def _get_cache_key(self, method_name, *args):
         """Generate a cache key based on method name and arguments"""
         key_parts = [self.username, method_name]
@@ -19,7 +19,7 @@ class GitHubService:
         if len(key) > 250:
             key = f"gh_{hashlib.md5(key.encode()).hexdigest()}"
         return key
-        
+        # Get list of user's public repositories with caching
     def get_user_repos(self):
         """Get list of user's public repositories with caching"""
         cache_key = self._get_cache_key("user_repos")
@@ -39,7 +39,7 @@ class GitHubService:
         else:
             print(f"Error fetching repos: {response.status_code}")
             return []
-            
+        # Get languages used in a repository with caching    
     def get_repo_languages(self, repo_name):
         """Get languages used in a repository with caching"""
         cache_key = self._get_cache_key("repo_languages", repo_name)
@@ -58,7 +58,7 @@ class GitHubService:
             return data
         else:
             return {}
-            
+        # Get recent commits in a repository with caching 
     def get_repo_commits(self, repo_name, max_commits=10):
         """Get recent commits in a repository with caching"""
         cache_key = self._get_cache_key("repo_commits", repo_name, max_commits)
@@ -78,7 +78,7 @@ class GitHubService:
             return data
         else:
             return []
-            
+        # Get repository README content with caching  
     def get_repo_readme(self, repo_name):
         """Get repository README content with caching"""
         cache_key = self._get_cache_key("repo_readme", repo_name)
@@ -99,6 +99,7 @@ class GitHubService:
                 return readme
         return ""
         
+        # Get repository topics/tags with caching
     def get_repo_topics(self, repo_name):
         """Get repository topics/tags with caching"""
         cache_key = self._get_cache_key("repo_topics", repo_name)
@@ -120,7 +121,7 @@ class GitHubService:
             return data
         else:
             return []
-            
+        # Collect data for a single repository    
     def collect_repo_data(self, repo_name):
         """Collect all data for a single repository"""
         languages = self.get_repo_languages(repo_name)
@@ -136,6 +137,7 @@ class GitHubService:
             'topics': topics
         }
         
+        # Collect all relevant GitHub data for the user
     def get_all_github_data(self, max_repos=5):
         """Get all relevant GitHub data for the user with caching"""
         cache_key = self._get_cache_key("all_github_data", max_repos)
