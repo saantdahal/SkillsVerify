@@ -1,4 +1,4 @@
-[22:51, 10/31/2025] +977 980-8845112: # ✅ TrustChain – Verify Skills, Not Just Words.
+# ✅ TrustChain – Verify Skills, Not Just Words.
 
 *TrustChain* helps you prove your real-world skills (like coding!) through AI analysis and blockchain-backed proof. Upload your resume, and get a verified skill report—simple, honest, and trusted.
 
