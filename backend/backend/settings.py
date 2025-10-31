@@ -18,11 +18,11 @@ SECRET_KEY = 'django-insecure-aie&n=ik$og#*+)w&e1trr#ae%g9l99eb^vi*q03o@vkg%p+ux
 
 DEBUG = True
 
+# all hosts are allowed in development mode:
 ALLOWED_HOSTS = []
 
 
-# Application definition
-
+# Define the installed applications here:
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'skill_verifier',
 ]
 
+# middleware configuration should be done here:
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -49,6 +50,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'backend.urls'
 
+# defining templates settings:
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -67,9 +69,8 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+#  using sqlite database:
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -77,17 +78,18 @@ DATABASES = {
     }
 }
 
+
+# setting up CORS:
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:8000"
 ]
 
-# CORS_ALLOW_ALL_ORIGINS: bool
 
 
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
+
+# password validations setup:
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -104,8 +106,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
+
+# setting up internationalization:
 
 LANGUAGE_CODE = 'en-us'
 
@@ -117,13 +119,9 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = 'static/'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
+# Default primary key field type:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # API Keys and Configuration
