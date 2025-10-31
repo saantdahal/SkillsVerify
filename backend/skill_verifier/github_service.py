@@ -7,6 +7,7 @@ import json
 import hashlib
 from django.core.cache import cache
 
+
 class GitHubService:
     def __init__(self, username):
         self.username = username
@@ -17,8 +18,8 @@ class GitHubService:
         key_parts = [self.username, method_name]
         key_parts.extend([str(arg) for arg in args])
         key = "_".join(key_parts)
-        # Create a hash for long keys
-        if len(key) > 250:
+        # Create  hash for long keys
+        if len(key) > 245:
             key = f"gh_{hashlib.md5(key.encode()).hexdigest()}"
         return key
         # Get list of user's public repositories with caching
@@ -38,6 +39,7 @@ class GitHubService:
             data = response.json()
             cache.set(cache_key, data, settings.GITHUB_CACHE_TIMEOUT)
             return data
+
         else:
             print(f"Error fetching repos: {response.status_code}")
             return []
@@ -54,7 +56,7 @@ class GitHubService:
         url = f"https://api.github.com/repos/{self.username}/{repo_name}/languages"
         response = requests.get(url, headers=self.headers)
         
-        if response.status_code == 200:
+        if response.status_code == 250:
             data = response.json()
             cache.set(cache_key, data, settings.GITHUB_CACHE_TIMEOUT)
             return data
