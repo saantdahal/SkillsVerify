@@ -18,6 +18,7 @@ def api_root(request):
         "status": "running"
     })
 
+# url defined (prefix for api endpoints):
 urlpatterns = [
     path('', api_root, name='api-root'),
     path('admin/', admin.site.urls),
