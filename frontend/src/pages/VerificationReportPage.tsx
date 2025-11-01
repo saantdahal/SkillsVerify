@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { CheckCircle, XCircle, AlertCircle, ChevronRight, Github, Download, ArrowLeft, Zap, BarChart2 } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, ChevronRight, Github, Download, ArrowLeft, Zap, BarChart2, Code, Cpu } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import StrengthPerSkillSection from "@/components/StrengthPerSkillSection";
 
@@ -30,9 +30,35 @@ interface VerificationResponse {
   verification_id: number;
 }
 
+interface AccountLanguages {
+  username: string;
+  total_bytes: number;
+  language_count: number;
+  repositories_analyzed: number;
+  top_languages: string[];
+  languages: Record<string, {
+    bytes: number;
+    count: number;
+    percentage: number;
+  }>;
+}
+
+interface AccountTechnologies {
+  username: string;
+  technology_count: number;
+  repositories_analyzed: number;
+  top_technologies: string[];
+  technologies: Record<string, {
+    count: number;
+    percentage: number;
+  }>;
+}
+
 const VerificationReportPage: React.FC = () => {
   const { verification_id } = useParams<{ verification_id: string }>();
   const [data, setData] = useState<VerificationResponse | null>(null);
+  const [accountLanguages, setAccountLanguages] = useState<AccountLanguages | null>(null);
+  const [accountTechnologies, setAccountTechnologies] = useState<AccountTechnologies | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("overview");
@@ -52,6 +78,29 @@ const VerificationReportPage: React.FC = () => {
           }
           
           setData(parsedData);
+          
+          // Fetch account languages and technologies
+          if (parsedData.github_username) {
+            try {
+              const [languagesRes, technologiesRes] = await Promise.all([
+                fetch(`http://127.0.0.1:8000/api/account/${parsedData.github_username}/languages/?max_repos=5`),
+                fetch(`http://127.0.0.1:8000/api/account/${parsedData.github_username}/technologies/?max_repos=5`)
+              ]);
+              
+              if (languagesRes.ok) {
+                const langData = await languagesRes.json();
+                setAccountLanguages(langData);
+              }
+              
+              if (technologiesRes.ok) {
+                const techData = await technologiesRes.json();
+                setAccountTechnologies(techData);
+              }
+            } catch (err) {
+              console.log('Could not fetch account stats:', err);
+            }
+          }
+          
           setLoading(false);
           return;
         }
@@ -69,6 +118,29 @@ const VerificationReportPage: React.FC = () => {
               }
               
               setData(parsedData);
+              
+              // Fetch account languages and technologies
+              if (parsedData.github_username) {
+                try {
+                  const [languagesRes, technologiesRes] = await Promise.all([
+                    fetch(`http://127.0.0.1:8000/api/account/${parsedData.github_username}/languages/?max_repos=20`),
+                    fetch(`http://127.0.0.1:8000/api/account/${parsedData.github_username}/technologies/?max_repos=20`)
+                  ]);
+                  
+                  if (languagesRes.ok) {
+                    const langData = await languagesRes.json();
+                    setAccountLanguages(langData);
+                  }
+                  
+                  if (technologiesRes.ok) {
+                    const techData = await technologiesRes.json();
+                    setAccountTechnologies(techData);
+                  }
+                } catch (err) {
+                  console.log('Could not fetch account stats:', err);
+                }
+              }
+              
               setLoading(false);
               return;
             }
@@ -289,7 +361,7 @@ const VerificationReportPage: React.FC = () => {
         <div className="flex overflow-x-auto mb-6 bg-gray-900/50 rounded-xl p-1 border border-gray-800">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`px-4 py-2 rounded-lg flex items-center mr-2 transition-colors ${activeTab === "overview" ? "bg-blue-500/20 text-blue-400" : "hover:bg-gray-800 text-gray-400"
+            className={`px-4 py-2 rounded-lg flex items-center mr-2 transition-colors whitespace-nowrap ${activeTab === "overview" ? "bg-blue-500/20 text-blue-400" : "hover:bg-gray-800 text-gray-400"
               }`}
           >
             <Zap className="w-4 h-4 mr-2" />
@@ -297,11 +369,19 @@ const VerificationReportPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab("skills")}
-            className={`px-4 py-2 rounded-lg flex items-center mr-2 transition-colors ${activeTab === "skills" ? "bg-blue-500/20 text-blue-400" : "hover:bg-gray-800 text-gray-400"
+            className={`px-4 py-2 rounded-lg flex items-center mr-2 transition-colors whitespace-nowrap ${activeTab === "skills" ? "bg-blue-500/20 text-blue-400" : "hover:bg-gray-800 text-gray-400"
               }`}
           >
             <BarChart2 className="w-4 h-4 mr-2" />
             Skills Analysis
+          </button>
+          <button
+            onClick={() => setActiveTab("tech")}
+            className={`px-4 py-2 rounded-lg flex items-center transition-colors whitespace-nowrap ${activeTab === "tech" ? "bg-blue-500/20 text-blue-400" : "hover:bg-gray-800 text-gray-400"
+              }`}
+          >
+            <Code className="w-4 h-4 mr-2" />
+            Tech Stack
           </button>
         </div>
 
@@ -476,6 +556,150 @@ const VerificationReportPage: React.FC = () => {
                 </div>
               </div>
             </div>
+          </>
+        )}
+
+        {activeTab === "tech" && (
+          <>
+            {/* Programming Languages Section */}
+            {accountLanguages && (
+              <div className="bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800 p-6 mb-8">
+                <h2 className="text-xl font-bold mb-2 flex items-center">
+                  <Cpu className="w-5 h-5 mr-3 text-purple-400" />
+                  Programming Languages
+                </h2>
+                <p className="text-gray-400 text-sm mb-6">
+                  Analyzed across {accountLanguages.repositories_analyzed} repositories
+                </p>
+
+                {/* Top Languages */}
+                <div className="mb-8">
+                  <h3 className="font-medium text-gray-300 mb-4">Top Languages by Usage</h3>
+                  <div className="space-y-4">
+                    {Object.entries(accountLanguages.languages)
+                      .sort(([, a], [, b]) => b.bytes - a.bytes)
+                      .slice(0, 8)
+                      .map(([lang, stats]) => (
+                        <div key={lang}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium">{lang}</span>
+                            <span className="text-sm text-gray-400">
+                              {stats.percentage}% • {(stats.bytes / 1024).toFixed(1)}KB
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-800/50 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-gradient-to-r from-blue-500 to-purple-500 h-full"
+                              style={{ width: `${stats.percentage}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Used in {stats.count} repository{stats.count !== 1 ? 'ies' : ''}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                {/* Language Summary */}
+                <div className="grid md:grid-cols-3 gap-4 pt-6 border-t border-gray-700">
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <p className="text-gray-400 text-sm mb-1">Total Languages</p>
+                    <p className="text-2xl font-bold text-blue-400">{accountLanguages.language_count}</p>
+                  </div>
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <p className="text-gray-400 text-sm mb-1">Total Code</p>
+                    <p className="text-2xl font-bold text-purple-400">
+                      {(accountLanguages.total_bytes / 1024 / 1024).toFixed(1)}MB
+                    </p>
+                  </div>
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <p className="text-gray-400 text-sm mb-1">Most Used</p>
+                    <p className="text-2xl font-bold text-green-400">{accountLanguages.top_languages[0]}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Technologies Section */}
+            {accountTechnologies && (
+              <div className="bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800 p-6 mb-8">
+                <h2 className="text-xl font-bold mb-2 flex items-center">
+                  <Code className="w-5 h-5 mr-3 text-blue-400" />
+                  Technology Stack
+                </h2>
+                <p className="text-gray-400 text-sm mb-6">
+                  Technologies across {accountTechnologies.repositories_analyzed} repositories
+                </p>
+
+                {/* Top Technologies */}
+                <div className="mb-8">
+                  <h3 className="font-medium text-gray-300 mb-4">Most Used Technologies</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {Object.entries(accountTechnologies.technologies)
+                      .sort(([, a], [, b]) => b.count - a.count)
+                      .slice(0, 12)
+                      .map(([tech, stats]) => (
+                        <div
+                          key={tech}
+                          className="bg-gradient-to-br from-blue-900/30 to-purple-900/20 border border-blue-800/50 rounded-lg p-4 hover:border-blue-600/50 transition-all"
+                        >
+                          <p className="font-medium capitalize text-sm text-white mb-2">{tech}</p>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-400">{stats.count} repos</span>
+                            <span className="text-xs font-bold text-blue-400">{stats.percentage}%</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                {/* All Technologies Cloud */}
+                <div className="pt-6 border-t border-gray-700">
+                  <h3 className="font-medium text-gray-300 mb-4">All Technologies</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(accountTechnologies.technologies)
+                      .sort(([, a], [, b]) => b.count - a.count)
+                      .map(([tech, stats]) => {
+                        let colorClass = 'bg-gray-700 text-gray-200';
+                        if (stats.percentage >= 60) colorClass = 'bg-red-600 text-white';
+                        else if (stats.percentage >= 40) colorClass = 'bg-orange-600 text-white';
+                        else if (stats.percentage >= 20) colorClass = 'bg-yellow-600 text-white';
+                        else colorClass = 'bg-green-600 text-white';
+
+                        return (
+                          <span
+                            key={tech}
+                            className={`${colorClass} px-3 py-1 rounded-full text-xs font-medium cursor-default`}
+                            title={`${stats.percentage}% of repositories`}
+                          >
+                            {tech}
+                          </span>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                {/* Technology Summary */}
+                <div className="grid md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-700">
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <p className="text-gray-400 text-sm mb-1">Total Technologies</p>
+                    <p className="text-2xl font-bold text-blue-400">{accountTechnologies.technology_count}</p>
+                  </div>
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <p className="text-gray-400 text-sm mb-1">Most Prevalent</p>
+                    <p className="text-2xl font-bold text-purple-400">{accountTechnologies.top_technologies[0]}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!accountLanguages && !accountTechnologies && (
+              <div className="bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800 p-12 text-center">
+                <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-400">Loading tech stack information...</p>
+              </div>
+            )}
           </>
         )}
 

@@ -8,20 +8,46 @@ const LoginPage = () => {
   const { login } = useLogin();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+
+  // Generate random state for CSRF protection
+  const generateRandomState = () => {
+    return Math.random().toString(36).substring(2, 15) +
+           Math.random().toString(36).substring(2, 15);
+  };
 
   const handleGitHubLogin = async () => {
     setIsLoading(true);
+    setError("");
     try {
-      await login(); // This will set logged in state
-      // Check if user is a recruiter and redirect accordingly
-      const userRole = sessionStorage.getItem("userRole");
-      if (userRole === "recruiter") {
-        setTimeout(() => navigate("/hrdashboard"), 500);
-      } else {
-        setTimeout(() => navigate("/upload-resume"), 500);
+      // Fetch GitHub authorization URL from backend
+      const response = await fetch("http://127.0.0.1:8000/api/auth/github/authorize/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get authorization URL");
       }
+
+      const data = await response.json();
+      const authorizeUrl = data.authorize_url;
+
+      // Generate and store state parameter for CSRF protection
+      const state = generateRandomState();
+      sessionStorage.setItem("oauth_state", state);
+
+      // Add state parameter to the authorization URL
+      const url = new URL(authorizeUrl);
+      url.searchParams.set("state", state);
+
+      // Redirect to GitHub OAuth authorization
+      window.location.href = url.toString();
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("OAuth error:", error);
+      setError("Failed to initiate GitHub login. Please try again.");
       setIsLoading(false);
     }
   };
@@ -42,6 +68,12 @@ const LoginPage = () => {
             Verify your skills with your GitHub profile
           </p>
         </div>
+
+        {error && (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
 
         <div className="mt-8 space-y-6 bg-slate-900/50 backdrop-blur-sm p-8 rounded-2xl border border-slate-800/50">
           <Button
@@ -89,6 +121,7 @@ const LoginPage = () => {
                   document.getElementById("github-username") as HTMLInputElement
                 )?.value;
                 if (username) {
+                  setIsLoading(true);
                   login(username);
                 }
               }}

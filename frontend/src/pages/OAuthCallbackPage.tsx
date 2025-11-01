@@ -11,9 +11,34 @@ const OAuthCallback: React.FC = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        // Check if we already have token and user from redirect
+        const token = searchParams.get("token");
+        const userStr = searchParams.get("user");
         const code = searchParams.get("code");
         const state = searchParams.get("state");
+        const errorParam = searchParams.get("error");
 
+        if (errorParam) {
+          setError(`Authentication error: ${errorParam}`);
+          setTimeout(() => navigate("/login"), 2000);
+          return;
+        }
+
+        // If we have token and user from backend redirect, use it directly
+        if (token && userStr) {
+          const userData = JSON.parse(userStr);
+          
+          // Store user data and token
+          sessionStorage.setItem("userDetails", JSON.stringify(userData));
+          sessionStorage.setItem("token", token);
+          sessionStorage.setItem("isLoggedIn", "true");
+          
+          // Redirect to upload page
+          navigate("/upload-resume");
+          return;
+        }
+
+        // Fallback: Exchange code for token with backend (for POST method)
         if (!code) {
           setError("No authorization code received");
           setTimeout(() => navigate("/login"), 2000);
@@ -22,7 +47,7 @@ const OAuthCallback: React.FC = () => {
 
         // Verify state matches
         const storedState = sessionStorage.getItem("oauth_state");
-        if (state !== storedState) {
+        if (state && state !== storedState) {
           setError("State mismatch - possible CSRF attack");
           setTimeout(() => navigate("/login"), 2000);
           return;

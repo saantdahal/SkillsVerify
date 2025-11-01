@@ -204,6 +204,74 @@ class SkillAnalyzer:
             print(f"Error calling AI API for verification: {e}. Falling back to basic verification.")
             return self.basic_skill_verification(resume_skills, github_skills)
     
+    def _clean_and_parse_json(self, text: str):
+        """
+        Clean and parse JSON from LLM response.
+        Handles cases where the LLM returns JSON with surrounding text.
+        """
+        try:
+            # Try direct parsing first
+            return json.loads(text)
+        except json.JSONDecodeError:
+            # Try to extract JSON from text
+            # Look for JSON array [...]
+            array_match = re.search(r'\[.*\]', text, re.DOTALL)
+            if array_match:
+                try:
+                    return json.loads(array_match.group())
+                except json.JSONDecodeError:
+                    pass
+            
+            # Look for JSON object {...}
+            object_match = re.search(r'\{.*\}', text, re.DOTALL)
+            if object_match:
+                try:
+                    return json.loads(object_match.group())
+                except json.JSONDecodeError:
+                    pass
+            
+            print(f"Failed to parse JSON from: {text[:100]}")
+            return None
+
+    def calculate_strength_metrics(self, verification_result, total_resume_skills):
+        """
+        Calculate professional strength metrics based on verification results.
+        Adds strength_per_skill, average_strength, and experience_level to the verification result.
+        """
+        verified_skills = verification_result.get('verified_skills', [])
+        
+        # Calculate strength for each verified skill
+        strength_per_skill = {}
+        for verified_skill in verified_skills:
+            skill_name = verified_skill.get('skill', 'Unknown')
+            # Base strength on evidence count and reasoning quality
+            evidence_count = len(verified_skill.get('evidence', []))
+            # Strength from 6-10 based on evidence count (cap at 10)
+            strength = min(10, 6 + evidence_count)
+            strength_per_skill[skill_name] = strength
+        
+        # Calculate average strength
+        if strength_per_skill:
+            average_strength = sum(strength_per_skill.values()) / len(strength_per_skill)
+        else:
+            average_strength = 0
+        
+        # Calculate experience level (0-100%)
+        # Based on verification percentage and number of skills
+        verification_percentage = verification_result.get('verification_percentage', 0)
+        skill_depth = len(verified_skills)
+        
+        # Experience level formula: (verification_percentage * 0.7) + (skill_count_factor * 0.3)
+        skill_count_factor = min(100, (skill_depth / max(total_resume_skills, 1)) * 100)
+        experience_level = (verification_percentage * 0.7) + (skill_count_factor * 0.3)
+        
+        # Add metrics to result
+        verification_result['strength_per_skill'] = strength_per_skill
+        verification_result['average_strength'] = round(average_strength, 1)
+        verification_result['experience_level'] = round(experience_level, 1)
+        
+        return verification_result
+
     # basic skill verification method:
     def basic_skill_verification(self, resume_skills, github_skills):
         """Basic fallback method for skill verification"""
@@ -213,33 +281,56 @@ class SkillAnalyzer:
         
         verified_skills_data = []
         unverified_skills_data = []
-
-        for norm_skill, original_skill in resume_skills_norm.items():
-            if norm_skill in github_skills_norm_set:
+        
+        # Create sets for comparison
+        github_skills_set = set(github_skills_lower)
+        
+        for original_skill in resume_skills:
+            skill_lower = original_skill.lower()
+            if skill_lower in github_skills_set:
                 verified_skills_data.append({
                     "skill": original_skill,
-                    "evidence": [original_skill], # Basic evidence
+                    "evidence": [original_skill],
                     "reasoning": "Direct match found (fallback mode)."
                 })
             else:
                 unverified_skills_data.append(original_skill)
-
-        resume_norm_set = set(resume_skills_norm.keys())
-        additional_skills = list({skill for skill in github_skills if normalize(skill) not in resume_norm_set})
-
+        
+        # Find additional skills from GitHub not in resume
+        resume_skills_set = set(resume_skills_lower)
+        additional_skills = [skill for skill in github_skills 
+                           if skill.lower() not in resume_skills_set]
+        
         percentage = (len(verified_skills_data) / len(resume_skills) * 100) if resume_skills else 0
         
         return {
             'verified_skills': verified_skills_data,
             'unverified_skills': unverified_skills_data,
             'additional_skills': additional_skills,
-            'verification_percentage': len(common_skills) / len(resume_skills) * 100 if resume_skills else 0,
-            'explanation': "Basic comparison performed. This is a fallback method."
+            'verification_percentage': percentage,
+            'summary': "Basic comparison performed. This is a fallback method."
         }
+    
     # Generate a hash of verified skills for blockchain storage
-    def generate_verification_hash(self, github_username, verified_skills):
-        """Generate a hash of verified skills that can be stored on blockchain"""
-        skills_string = ",".join(sorted([skill.lower() for skill in verified_skills]))
+    def generate_verification_hash(self, github_username, verification_result):
+        """
+        Generate a hash of verified skills that can be stored on blockchain.
+        Takes the full verification_result dict and extracts verified_skills.
+        """
+        # Extract verified skills from the result
+        verified_skills = verification_result.get('verified_skills', [])
+        
+        # Get skill names from verified_skills list
+        if verified_skills and isinstance(verified_skills[0], dict):
+            # Format: [{"skill": "...", "evidence": [...], "reasoning": "..."}]
+            skills_string = ",".join(sorted([
+                skill_obj.get('skill', '').lower() 
+                for skill_obj in verified_skills
+            ]))
+        else:
+            # Fallback: treat as list of strings
+            skills_string = ",".join(sorted([skill.lower() for skill in verified_skills]))
+        
         data_to_hash = f"{github_username}:{skills_string}:{settings.SECRET_KEY}"
         hash_object = hashlib.sha256(data_to_hash.encode())
         return hash_object.hexdigest()

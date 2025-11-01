@@ -34,9 +34,6 @@ const UserDetailsInitialValues = {
   name: "",
 };
 
-const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || "";
-const GITHUB_REDIRECT_URI = import.meta.env.VITE_GITHUB_REDIRECT_URI || "http://localhost:5173/auth/callback";
-
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userDetails, setUserDetails] = useState<UserDetails>(
@@ -72,25 +69,46 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           sessionStorage.setItem("isLoggedIn", "true");
           sessionStorage.setItem("token", data.token);
         } else {
-          console.error("Authentication failed");
+          const errorData = await response.json();
+          console.error("Authentication failed:", errorData.error);
+          throw new Error(errorData.error || "Authentication failed");
         }
       } else {
-        // GitHub OAuth login - redirect to upload page directly
-        setIsLoggedIn(true);
-        setUserDetails({
-          email: "",
-          name: "GitHub User",
-          github_username: "github_user",
-        });
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("userDetails", JSON.stringify({
-          email: "",
-          name: "GitHub User",
-          github_username: "github_user",
-        }));
+        // OAuth login - redirect to GitHub authorization
+        try {
+          const response = await fetch("http://127.0.0.1:8000/api/auth/github/authorize/", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to get authorization URL");
+          }
+
+          const data = await response.json();
+          const authorizeUrl = data.authorize_url;
+
+          // Generate and store state parameter for CSRF protection
+          const state = Math.random().toString(36).substring(2, 15) +
+                       Math.random().toString(36).substring(2, 15);
+          sessionStorage.setItem("oauth_state", state);
+
+          // Add state parameter to the authorization URL
+          const url = new URL(authorizeUrl);
+          url.searchParams.set("state", state);
+
+          // Redirect to GitHub OAuth authorization
+          window.location.href = url.toString();
+        } catch (error) {
+          console.error("OAuth error:", error);
+          throw new Error("Failed to initiate GitHub login");
+        }
       }
     } catch (error) {
       console.error("Login error:", error);
+      throw error;
     }
   };
 

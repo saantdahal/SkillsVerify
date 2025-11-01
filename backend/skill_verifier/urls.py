@@ -6,7 +6,10 @@ from .views import (
     ClearCacheView,
     GitHubOAuthAuthorizeView,
     GitHubOAuthCallbackView,
-    GitHubAuthenticateView
+    GitHubAuthenticateView,
+    GetAccountLanguagesView,
+    GetAccountTechnologiesView,
+    GetAccountSummaryView
 )
 
 # basic url patterns for skill_verifier app:
@@ -17,5 +20,7 @@ urlpatterns = [
     path('auth/github/authorize/', GitHubOAuthAuthorizeView.as_view(), name='github_authorize'),
     path('auth/github/callback/', GitHubOAuthCallbackView.as_view(), name='github_callback'),
     path('auth/github/authenticate/', GitHubAuthenticateView.as_view(), name='github_authenticate'),
+    path('account/<str:username>/languages/', GetAccountLanguagesView.as_view(), name='account_languages'),
+    path('account/<str:username>/technologies/', GetAccountTechnologiesView.as_view(), name='account_technologies'),
+    path('account/<str:username>/summary/', GetAccountSummaryView.as_view(), name='account_summary'),
 ]
-

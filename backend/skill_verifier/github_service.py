@@ -215,3 +215,146 @@ class GitHubService:
         else:
             print(f"Error fetching user info: {response.status_code}")
             return None
+    
+    def get_account_programming_languages(self, max_repos=10):
+        """
+        Analyze programming languages across all user repositories.
+        Returns aggregated language statistics for the entire account.
+        """
+        cache_key = self._get_cache_key("account_languages", max_repos)
+        cached_data = cache.get(cache_key)
+        
+        if cached_data is not None:
+            print(f"Cache hit: {cache_key}")
+            return cached_data
+        
+        repos = self.get_user_repos()
+        language_stats = {}
+        total_bytes = 0
+        
+        print(f"\n[GitHub Service] Analyzing languages across {min(len(repos), max_repos)} repositories")
+        
+        for repo in repos[:max_repos]:
+            repo_name = repo.get('name')
+            languages = self.get_repo_languages(repo_name)
+            
+            if languages:
+                for language, bytes_count in languages.items():
+                    if language not in language_stats:
+                        language_stats[language] = {
+                            'bytes': 0,
+                            'count': 0,  # Number of repos using this language
+                            'percentage': 0
+                        }
+                    language_stats[language]['bytes'] += bytes_count
+                    language_stats[language]['count'] += 1
+                    total_bytes += bytes_count
+        
+        # Calculate percentages
+        for language in language_stats:
+            if total_bytes > 0:
+                language_stats[language]['percentage'] = round(
+                    (language_stats[language]['bytes'] / total_bytes) * 100, 2
+                )
+        
+        # Sort by bytes (usage)
+        sorted_languages = dict(sorted(
+            language_stats.items(),
+            key=lambda x: x[1]['bytes'],
+            reverse=True
+        ))
+        
+        result = {
+            'username': self.username,
+            'total_bytes': total_bytes,
+            'languages': sorted_languages,
+            'top_languages': list(sorted_languages.keys())[:5],
+            'language_count': len(sorted_languages),
+            'repositories_analyzed': min(len(repos), max_repos)
+        }
+        
+        cache.set(cache_key, result, settings.GITHUB_CACHE_TIMEOUT)
+        return result
+    
+    def get_account_technologies(self, max_repos=10):
+        """
+        Aggregate all topics/technologies across user repositories.
+        Returns a comprehensive list of technologies used in the account.
+        """
+        cache_key = self._get_cache_key("account_technologies", max_repos)
+        cached_data = cache.get(cache_key)
+        
+        if cached_data is not None:
+            print(f"Cache hit: {cache_key}")
+            return cached_data
+        
+        repos = self.get_user_repos()
+        technology_stats = {}
+        
+        print(f"\n[GitHub Service] Analyzing technologies across {min(len(repos), max_repos)} repositories")
+        
+        for repo in repos[:max_repos]:
+            repo_name = repo.get('name')
+            topics = self.get_repo_topics(repo_name)
+            
+            if topics:
+                for topic in topics:
+                    if topic not in technology_stats:
+                        technology_stats[topic] = {
+                            'count': 0,
+                            'percentage': 0
+                        }
+                    technology_stats[topic]['count'] += 1
+        
+        # Calculate percentages
+        total_repos = min(len(repos), max_repos)
+        for tech in technology_stats:
+            if total_repos > 0:
+                technology_stats[tech]['percentage'] = round(
+                    (technology_stats[tech]['count'] / total_repos) * 100, 2
+                )
+        
+        # Sort by count (usage frequency)
+        sorted_technologies = dict(sorted(
+            technology_stats.items(),
+            key=lambda x: x[1]['count'],
+            reverse=True
+        ))
+        
+        result = {
+            'username': self.username,
+            'technologies': sorted_technologies,
+            'top_technologies': list(sorted_technologies.keys())[:10],
+            'technology_count': len(sorted_technologies),
+            'repositories_analyzed': total_repos
+        }
+        
+        cache.set(cache_key, result, settings.GITHUB_CACHE_TIMEOUT)
+        return result
+    
+    def get_account_summary(self, max_repos=10):
+        """
+        Get comprehensive account summary including languages, technologies, and user info.
+        """
+        cache_key = self._get_cache_key("account_summary", max_repos)
+        cached_data = cache.get(cache_key)
+        
+        if cached_data is not None:
+            print(f"Cache hit: {cache_key}")
+            return cached_data
+        
+        user_info = self.get_user_info()
+        languages = self.get_account_programming_languages(max_repos)
+        technologies = self.get_account_technologies(max_repos)
+        repos = self.get_user_repos()
+        
+        result = {
+            'user_info': user_info,
+            'programming_languages': languages,
+            'technologies': technologies,
+            'total_repositories': len(repos),
+            'repositories_analyzed': min(len(repos), max_repos)
+        }
+        
+        cache.set(cache_key, result, settings.GITHUB_CACHE_TIMEOUT)
+        return result

@@ -155,8 +155,65 @@ class GitHubOAuthAuthorizeView(APIView):
 
 
 class GitHubOAuthCallbackView(APIView):
-    """Handle GitHub OAuth callback"""
+    """Handle GitHub OAuth callback from GitHub"""
+    def get(self, request):
+        try:
+            code = request.query_params.get('code')
+            state = request.query_params.get('state')
+            
+            if not code:
+                error_msg = request.query_params.get('error', 'Unknown error')
+                return JsonResponse({
+                    "error": f"Authorization failed: {error_msg}",
+                    "code": None
+                }, status=400)
+            
+            # Exchange code for access token
+            oauth_handler = GitHubOAuthHandler()
+            access_token, error = oauth_handler.exchange_code_for_token(code)
+            if error:
+                return JsonResponse({
+                    "error": f"Failed to get access token: {error}",
+                    "code": None
+                }, status=400)
+            
+            # Get user information
+            user_info, error = oauth_handler.get_user_info(access_token)
+            if error:
+                return JsonResponse({
+                    "error": f"Failed to get user info: {error}",
+                    "code": None
+                }, status=400)
+            
+            # Generate JWT token
+            jwt_token = oauth_handler.generate_jwt_token(user_info)
+            if not jwt_token:
+                return JsonResponse({
+                    "error": "Failed to generate token",
+                    "code": None
+                }, status=500)
+            
+            # Store token and user data, then redirect to frontend callback
+            from django.http import HttpResponseRedirect
+            from urllib.parse import urlencode
+            
+            callback_params = {
+                'code': code,
+                'state': state or '',
+                'token': jwt_token,
+                'user': json.dumps(user_info)
+            }
+            
+            # Redirect to frontend callback page
+            frontend_callback_url = f"http://localhost:3000/auth/callback?{urlencode(callback_params)}"
+            return HttpResponseRedirect(frontend_callback_url)
+        
+        except Exception as e:
+            from django.http import HttpResponseRedirect
+            return HttpResponseRedirect(f"http://localhost:3000/auth/callback?error={str(e)}")
+    
     def post(self, request):
+        """Handle POST requests from frontend after authorization"""
         try:
             code = request.data.get('code')
             if not code:
@@ -222,6 +279,63 @@ class GitHubAuthenticateView(APIView):
                 "token": jwt_token,
                 "user": user_info
             }, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GetAccountLanguagesView(APIView):
+    """Get programming languages used across user's GitHub account"""
+    def get(self, request, username):
+        try:
+            max_repos = request.query_params.get('max_repos', 5)
+            try:
+                max_repos = int(max_repos)
+            except (ValueError, TypeError):
+                max_repos = 5
+            
+            github_service = GitHubService(username)
+            languages = github_service.get_account_programming_languages(max_repos)
+            
+            return Response(languages, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GetAccountTechnologiesView(APIView):
+    """Get technologies/topics used across user's GitHub account"""
+    def get(self, request, username):
+        try:
+            max_repos = request.query_params.get('max_repos', 20)
+            try:
+                max_repos = int(max_repos)
+            except (ValueError, TypeError):
+                max_repos = 20
+            
+            github_service = GitHubService(username)
+            technologies = github_service.get_account_technologies(max_repos)
+            
+            return Response(technologies, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GetAccountSummaryView(APIView):
+    """Get comprehensive account summary including user info, languages, and technologies"""
+    def get(self, request, username):
+        try:
+            max_repos = request.query_params.get('max_repos', 20)
+            try:
+                max_repos = int(max_repos)
+            except (ValueError, TypeError):
+                max_repos = 20
+            
+            github_service = GitHubService(username)
+            summary = github_service.get_account_summary(max_repos)
+            
+            return Response(summary, status=status.HTTP_200_OK)
         
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
