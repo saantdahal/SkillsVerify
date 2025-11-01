@@ -6,6 +6,8 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
 import VerificationReportPage from "@/pages/VerificationReportPage";
 import HRDashboard from "@/pages/HrDashboard";
+import ResumeUploadForm from "@/components/ResumeUploadForm";
+import OAuthCallback from "@/pages/OAuthCallbackPage";
 
 export const routes = createBrowserRouter([
   {
@@ -17,10 +19,15 @@ export const routes = createBrowserRouter([
     element: <LoginPage />,
   },
   {
+    path: "/auth/callback",
+    element: <OAuthCallback />,
+  },
+  {
     path: "/",
     element: <Layout />,
     children: [
       { path: "/", element: <HomePage /> },
+      { path: "/upload-resume", element: <ResumeUploadForm /> },
       {
         element: <ProtectedRoute redirectPath="/login" />,
         children: [
@@ -31,6 +38,10 @@ export const routes = createBrowserRouter([
     ],
   },
 
+  {
+    path: "/hrdashboard",
+    element: <HRDashboard />,
+  },
   {
     path: "/hrdashboard/manish",
     element: <HRDashboard />,

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { FileText, Github, Award, User, ChevronRight, Download, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { FileText, Github, Award, User, AlertCircle } from 'lucide-react';
 
-// TypeScript interfaces - Removed SkillScores interface
+// TypeScript interfaces
 interface GithubMetrics {
   contributions: number;
   repositories: number;
@@ -17,7 +17,7 @@ interface CandidateListItem {
   id: string;
   name: string;
   resumeHash: string;
-  techSkillRatings: { [key: string]: number }; // Technical skills with ratings
+  techSkillRatings: { [key: string]: number };
   githubMetrics: GithubMetrics;
   overallScore: number;
 }
@@ -26,11 +26,6 @@ interface CandidateDetailReport extends CandidateListItem {
   email: string;
   technicalSkills: string[];
   evaluationNotes: string;
-}
-
-interface ChartDataItem {
-  name: string;
-  value: number;
 }
 
 // Sample blockchain connection utility
@@ -120,10 +115,10 @@ const BlockchainService = {
     });
   },
   
-  getCandidateReport: async (candidateId) => {
+  getCandidateReport: async (candidateId: string) => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const candidates = {
+        const candidates: { [key: string]: CandidateDetailReport } = {
           '0x7dF9a1a3C9AA275B58B23e4Bd48E38C0a5ccC89A': {
             id: '0x7dF9a1a3C9AA275B58B23e4Bd48E38C0a5ccC89A',
             name: 'Alice Johnson',
@@ -232,7 +227,7 @@ const BlockchainService = {
   }
 };
 
-const formatDate = (dateString) => {
+const formatDate = () => {
   const date = new Date();
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
@@ -243,10 +238,10 @@ const formatDate = (dateString) => {
 
 // Main Dashboard component
 const HRDashboard = () => {
-  const [candidates, setCandidates] = useState([]);
+  const [candidates, setCandidates] = useState<CandidateListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
-  const [reportData, setReportData] = useState(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
+  const [reportData, setReportData] = useState<CandidateDetailReport | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
 
   useEffect(() => {
@@ -266,13 +261,13 @@ const HRDashboard = () => {
     fetchCandidates();
   }, []);
 
-  const viewCandidateReport = async (candidateId) => {
+  const viewCandidateReport = async (candidateId: string) => {
     setSelectedCandidate(candidateId);
     setReportLoading(true);
     
     try {
       const report = await BlockchainService.getCandidateReport(candidateId);
-      setReportData(report);
+      setReportData(report as CandidateDetailReport);
       setReportLoading(false);
     } catch (error) {
       console.error("Error fetching candidate report:", error);
@@ -281,7 +276,7 @@ const HRDashboard = () => {
   };
 
   // Prepare chart data using technology skills
-  const prepareTechSkillChartData = (techSkillRatings) => {
+  const prepareTechSkillChartData = (techSkillRatings: { [key: string]: number }) => {
     if (!techSkillRatings) return [];
     
     return Object.entries(techSkillRatings).map(([name, value]) => ({

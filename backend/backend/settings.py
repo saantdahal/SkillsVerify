@@ -128,6 +128,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 OPENROUTER_API_KEY = os.getenv('DEEPSEEK_API_KEY')  # Using DEEPSEEK_API_KEY env var for backward compatibility
 
+# GitHub OAuth Configuration
+GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID', '')
+GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET', '')
+GITHUB_REDIRECT_URI = os.getenv('GITHUB_REDIRECT_URI', 'http://localhost:8000/api/auth/github/callback/')
+
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',

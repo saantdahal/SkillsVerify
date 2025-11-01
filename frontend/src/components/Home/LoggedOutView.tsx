@@ -1,11 +1,11 @@
 // TrustChainHero.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import { FaGithub, FaLinkedin, FaShieldAlt, FaCode } from 'react-icons/fa';
+import { FaGithub, FaShieldAlt, FaCode } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { useLogin } from '@/context/UserContext';
 
 const LoggedOutView: React.FC = () => {
-    const { isLoggedIn, userDetails, login, logOut } = useLogin();
+    const { login } = useLogin();
   const [isVisible, setIsVisible] = useState(false);
   const particlesRef = useRef<HTMLDivElement>(null);
   
@@ -130,7 +130,7 @@ const LoggedOutView: React.FC = () => {
             variants={itemVariants}
             className="flex flex-col sm:flex-row justify-center gap-4 mb-16"
           >
-            <button onClick={login} className ="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-300 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 flex items-center justify-center group ">
+            <button onClick={() => login()} className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-300 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 flex items-center justify-center group ">
               <span>Sign In</span>
               <div className="ml-2 group-hover:translate-x-1 transition-transform">→</div>
             </button>
