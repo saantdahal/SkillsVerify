@@ -1,6 +1,6 @@
-# ✅ TrustChain – Verify Skills, Not Just Words.
+# ✅ Verify Skills, Not Just Words.
 
-_TrustChain_ helps you prove your real-world skills (like coding!) through AI analysis and blockchain-backed proof. Upload your resume, and get a verified skill report—simple, honest, and trusted.
+_Verify Skills_ helps you prove your real-world skills (like coding!) through AI analysis and blockchain-backed proof. Upload your resume, and get a verified skill report—simple, honest, and trusted.
 
 ---
 
@@ -36,7 +36,7 @@ Skill Verifier helps you prove your real-world skills (like coding!) through AI 
 
 ## 🏗 Project Structure
 
-trustchain/
+SkillVerify/
 ├── frontend/ # Typescript + Vite app
 ├── backend/ # Django REST API + AI logic
 ├── .env # Backend environment variables
@@ -83,8 +83,6 @@ VITE_APP_NETWORK=testnet
 ---
 
 ## 🔁 Flow / Architecture
-
-![alt text](image.png)
 
 - Login:: login with githuboauth
 - LLMs: Analyze GitHub repo locally (clone & scan).

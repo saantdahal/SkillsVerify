@@ -5,7 +5,7 @@ django.setup()
 
 from skill_verifier.github_service import GitHubService
 
-# Test fetching user repos
+# test api to fetch github data:
 def test_github_api():
     username = input("Enter GitHub username to test: ")
     github = GitHubService(username)
@@ -15,7 +15,7 @@ def test_github_api():
     print(f"Found {len(repos)} repositories")
     
     if repos:
-        # Test fetching detailed repo info for the first repo
+        # test detailed info for the first repo:
         repo_name = repos[0]['name']
         print(f"\nTesting detailed info for repo: {repo_name}")
         
@@ -25,7 +25,7 @@ def test_github_api():
         readme = github.get_repo_readme(repo_name)
         print(f"README snippet: {readme[:100]}...")
         
-        # Test collecting all data
+        # collecting data for all repos (limited):
         print("\nCollecting data for all repos (limited to 3)...")
         all_data = github.get_all_github_data(max_repos=3)
         print(f"Collected data for {len(all_data['repos'])} repositories")
