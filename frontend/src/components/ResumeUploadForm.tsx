@@ -1,7 +1,7 @@
-import React, { useState, useRef, ChangeEvent, DragEvent } from "react";
+import React, { useState, useRef, ChangeEvent, DragEvent, useEffect } from "react";
 import { Upload, CheckCircle, X, File, FileText, Loader } from "lucide-react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface VerifiedSkill {
   skill: string;

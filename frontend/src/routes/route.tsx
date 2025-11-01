@@ -28,11 +28,11 @@ export const routes = createBrowserRouter([
     children: [
       { path: "/", element: <HomePage /> },
       { path: "/upload-resume", element: <ResumeUploadForm /> },
+      { path: "/verification/:verification_id", element: <VerificationReportPage /> },
       {
         element: <ProtectedRoute redirectPath="/login" />,
         children: [
           // { path: "/profile", element: <ProfilePage /> },
-          { path: "/verification/:verification_id", element:  <VerificationReportPage /> },
         ],
       },
     ],

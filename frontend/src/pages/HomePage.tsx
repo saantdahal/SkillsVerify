@@ -1,24 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Github, CheckCircle, Upload, FileText, BarChart3, Shield, Zap, ArrowRight, Sparkles, Menu, X, Briefcase, UserCircle } from "lucide-react";
+import { Github, CheckCircle, Upload, FileText, BarChart3, Shield, Zap, ArrowRight, Sparkles, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLogin } from "@/context/UserContext";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 
 const Navbar = () => {
-  const { isLoggedIn, login, logOut } = useLogin();
+  const { isLoggedIn, logOut } = useLogin();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleRecruiterSignIn = () => {
-    login();
-    navigate("/hrdashboard");
-  };
 
   return (
     <nav className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50">
@@ -44,41 +33,20 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-3">
             {!isLoggedIn ? (
               <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-slate-300 hover:text-white hover:bg-white/10">
-                      Sign In
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => login()}>
-                      <Github className="w-4 h-4 mr-2" />
-                      Sign In as User
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleRecruiterSignIn}>
-                      <Briefcase className="w-4 h-4 mr-2" />
-                      Sign In as Recruiter
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  onClick={() => navigate("/upload-resume")}
+                  variant="ghost"
+                  className="text-slate-300 hover:text-white hover:bg-white/10"
+                >
+                  Sign In
+                </Button>
                 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
-                      Get Started
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => login()}>
-                      <UserCircle className="w-4 h-4 mr-2" />
-                      Sign Up as User
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleRecruiterSignIn}>
-                      <Briefcase className="w-4 h-4 mr-2" />
-                      Sign Up as Recruiter
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  onClick={() => navigate("/upload-resume")}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                >
+                  Get Started
+                </Button>
               </>
             ) : (
               <div className="flex items-center gap-3">
@@ -112,15 +80,18 @@ const Navbar = () => {
               
               {!isLoggedIn ? (
                 <div className="flex flex-col gap-2 pt-4 border-t border-slate-800">
-                  <Button onClick={() => login()} variant="ghost" className="w-full justify-start text-slate-300 hover:text-white hover:bg-white/10">
+                  <Button
+                    onClick={() => navigate("/upload-resume")}
+                    variant="ghost"
+                    className="w-full justify-start text-slate-300 hover:text-white hover:bg-white/10"
+                  >
                     <Github className="w-4 h-4 mr-2" />
-                    Sign In as User
+                    Sign In
                   </Button>
-                  <Button onClick={handleRecruiterSignIn} variant="ghost" className="w-full justify-start text-slate-300 hover:text-white hover:bg-white/10">
-                    <Briefcase className="w-4 h-4 mr-2" />
-                    Sign In as Recruiter
-                  </Button>
-                  <Button onClick={() => login()} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white mt-2">
+                  <Button
+                    onClick={() => navigate("/upload-resume")}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white mt-2"
+                  >
                     Get Started
                   </Button>
                 </div>
@@ -228,7 +199,7 @@ const HomePage = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Button 
                   size="lg" 
-                  onClick={() => login()}
+                  onClick={() => navigate("/upload-resume")}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg px-8 py-6 rounded-full shadow-lg shadow-blue-500/25 transition-all hover:scale-105"
                 >
                   <Github className="w-5 h-5 mr-2" />
@@ -375,7 +346,7 @@ const HomePage = () => {
           {/* User Plan */}
           <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-8 border border-slate-700/50 backdrop-blur-sm hover:border-blue-500/50 transition-all">
             <div className="flex items-center gap-3 mb-6">
-              <UserCircle className="w-8 h-8 text-blue-400" />
+              <FileText className="w-8 h-8 text-blue-400" />
               <h3 className="text-2xl font-bold text-white">For Professionals</h3>
             </div>
             <div className="mb-6">
@@ -400,7 +371,7 @@ const HomePage = () => {
                 Career recommendations
               </li>
             </ul>
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={() => login()}>
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={() => navigate("/upload-resume")}>
               Get Started
             </Button>
           </div>
@@ -411,7 +382,7 @@ const HomePage = () => {
               POPULAR
             </div>
             <div className="flex items-center gap-3 mb-6">
-              <Briefcase className="w-8 h-8 text-purple-400" />
+              <BarChart3 className="w-8 h-8 text-purple-400" />
               <h3 className="text-2xl font-bold text-white">For Recruiters</h3>
             </div>
             <div className="mb-6">

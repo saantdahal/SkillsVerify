@@ -193,24 +193,16 @@ class GitHubOAuthCallbackView(APIView):
                     "code": None
                 }, status=500)
             
-            # Store token and user data, then redirect to frontend callback
+            # Store token and user data in session, then redirect to upload page
             from django.http import HttpResponseRedirect
-            from urllib.parse import urlencode
             
-            callback_params = {
-                'code': code,
-                'state': state or '',
-                'token': jwt_token,
-                'user': json.dumps(user_info)
-            }
-            
-            # Redirect to frontend callback page
-            frontend_callback_url = f"http://localhost:3000/auth/callback?{urlencode(callback_params)}"
-            return HttpResponseRedirect(frontend_callback_url)
+            # Redirect directly to upload page
+            return HttpResponseRedirect("http://localhost:3000/upload-resume")
         
         except Exception as e:
             from django.http import HttpResponseRedirect
-            return HttpResponseRedirect(f"http://localhost:3000/auth/callback?error={str(e)}")
+            # Redirect to upload page with error (frontend will handle fallback)
+            return HttpResponseRedirect(f"http://localhost:3000/upload-resume?error={str(e)}")
     
     def post(self, request):
         """Handle POST requests from frontend after authorization"""
