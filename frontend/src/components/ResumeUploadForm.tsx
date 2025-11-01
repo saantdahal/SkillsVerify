@@ -98,8 +98,12 @@ const ResumeUploadForm: React.FC = () => {
       
       setIsSubmitting(false);
       
-      // Redirect to verification report page
+      // Store the verification response in localStorage
       if (response.data && response.data.verification_id) {
+        localStorage.setItem('blobObject', JSON.stringify({ 
+          blobId: response.data.verification_id 
+        }));
+        localStorage.setItem('verificationData', JSON.stringify(response.data));
         navigate(`/verification/${response.data.verification_id}`);
       }
     } catch (err) {

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { CheckCircle, XCircle, AlertCircle, ChevronRight, Github, Download, ArrowLeft, Zap, BarChart2, Award } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { fetchFromWalrus } from "@/services/walrusService";
 import StrengthPerSkillSection from "@/components/StrengthPerSkillSection";
 
 interface VerificationResponse {
@@ -31,33 +30,44 @@ const VerificationReportPage: React.FC = () => {
   useEffect(() => {
     const fetchVerificationData = async () => {
       try {
-        // get 
-        const storedBlobObject = localStorage.getItem('blobObject');
-
-        if (storedBlobObject) {
-          const blobObject = JSON.parse(storedBlobObject);
-          const blobId = blobObject?.blobId;
-
-          if (blobId) {
-            const fetchedData = await fetchFromWalrus(blobId);
-            console.log('Fetched blob content:', fetchedData);
-
-            // Parse the fetched data if it's a string
-            const parsedData = typeof fetchedData === 'string' ? JSON.parse(fetchedData) : fetchedData;
-
-            // Add current date as created_at if it doesn't exist
-            if (!parsedData.created_at) {
-              parsedData.created_at = new Date().toISOString();
-            }
-
-            setData(parsedData);
-            setLoading(false);
-          } else {
-            throw new Error('blobId not found in stored blobObject');
+        // First try to get data from localStorage
+        const storedVerificationData = localStorage.getItem('verificationData');
+        
+        if (storedVerificationData) {
+          const parsedData = JSON.parse(storedVerificationData);
+          
+          // Add current date as created_at if it doesn't exist
+          if (!parsedData.created_at) {
+            parsedData.created_at = new Date().toISOString();
           }
-        } else {
-          throw new Error('No blobObject found in localStorage');
+          
+          setData(parsedData);
+          setLoading(false);
+          return;
         }
+        
+        // Fallback: Try to fetch from Walrus if verification_id is available
+        if (verification_id) {
+          try {
+            const response = await fetch(`http://127.0.0.1:8000/api/verification/${verification_id}/`);
+            if (response.ok) {
+              const parsedData = await response.json();
+              
+              // Add current date as created_at if it doesn't exist
+              if (!parsedData.created_at) {
+                parsedData.created_at = new Date().toISOString();
+              }
+              
+              setData(parsedData);
+              setLoading(false);
+              return;
+            }
+          } catch (walrusErr) {
+            console.log('Could not fetch from Walrus:', walrusErr);
+          }
+        }
+        
+        throw new Error('No verification data found in localStorage or backend');
       } catch (err) {
         setLoading(false);
         setError(`Failed to load report: ${err instanceof Error ? err.message : 'Unknown error'}`);

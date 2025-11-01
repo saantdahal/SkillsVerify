@@ -205,7 +205,7 @@ const LoggedOutView: React.FC = () => {
       </div>
       
       {/* Global styles */}
-      <style jsx global>{`
+      <style>{`
         @keyframes float {
           0% { transform: translateY(0) translateX(0) rotate(0); opacity: 0; }
           10% { opacity: 0.3; }
