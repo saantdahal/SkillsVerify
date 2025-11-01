@@ -5,39 +5,47 @@ from django.conf import settings
 import json
 import hashlib
 from django.core.cache import cache
+from django.http import JsonResponse
 
 from .github_service import GitHubService
 from .resume_parser import ResumeParser
 from .skill_analyzer import SkillAnalyzer
 from .models import SkillVerification
+from .github_oauth import GitHubOAuthHandler
 
 class VerifySkillsView(APIView):
     def post(self, request):
-        # Check if GitHub username is provided
-        github_username = request.data.get('github_username')
-        if not github_username:
-            return Response({"error": "GitHub username is required"}, status=status.HTTP_400_BAD_REQUEST)
-        
         # Check if resume file is provided
         if 'resume_pdf' not in request.FILES:
             return Response({"error": "Resume PDF file is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         resume_file = request.FILES['resume_pdf']
         
-        # Check if we already have a cached full response for this combination
-        parser = ResumeParser()
-        pdf_hash = parser._generate_pdf_hash(resume_file)
-        full_cache_key = f"full_verification_{github_username}_{pdf_hash}"
-        cached_response = cache.get(full_cache_key)
-        
-        if cached_response is not None:
-            print(f"Cache hit for full verification: {full_cache_key}")
-            return Response(cached_response, status=status.HTTP_200_OK)
-        
         try:
-            # Step 1: Parse resume PDF
+            # Step 1: Parse resume PDF to extract skills and GitHub username
+            parser = ResumeParser()
             resume_data = parser.parse_resume(resume_file)
             resume_skills = resume_data['skills']
+            
+            # Extract GitHub username from resume
+            github_username = resume_data.get('github_username')
+            
+            # If GitHub username is not found in resume, check if it's provided in the request
+            if not github_username:
+                github_username = request.data.get('github_username')
+            
+            # If still no GitHub username, return error
+            if not github_username:
+                return Response({"error": "GitHub username not found in resume and not provided in request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if we already have a cached full response for this combination
+            pdf_hash = parser._generate_pdf_hash(resume_file)
+            full_cache_key = f"full_verification_{github_username}_{pdf_hash}"
+            cached_response = cache.get(full_cache_key)
+            
+            if cached_response is not None:
+                print(f"Cache hit for full verification: {full_cache_key}")
+                return Response(cached_response, status=status.HTTP_200_OK)
             
             # Step 2: Get GitHub data
             github_service = GitHubService(github_username)
@@ -105,3 +113,89 @@ class ClearCacheView(APIView):
     def post(self, request):
         cache.clear()
         return Response({"message": "Cache cleared successfully"}, status=status.HTTP_200_OK)
+
+
+class GitHubOAuthAuthorizeView(APIView):
+    """Get GitHub OAuth authorization URL"""
+    def get(self, request):
+        try:
+            oauth_handler = GitHubOAuthHandler()
+            authorize_url = oauth_handler.get_authorize_url()
+            return Response({
+                "authorize_url": authorize_url
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GitHubOAuthCallbackView(APIView):
+    """Handle GitHub OAuth callback"""
+    def post(self, request):
+        try:
+            code = request.data.get('code')
+            if not code:
+                return Response({"error": "Authorization code is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            oauth_handler = GitHubOAuthHandler()
+            
+            # Exchange code for access token
+            access_token, error = oauth_handler.exchange_code_for_token(code)
+            if error:
+                return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Get user information
+            user_info, error = oauth_handler.get_user_info(access_token)
+            if error:
+                return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Generate JWT token
+            jwt_token = oauth_handler.generate_jwt_token(user_info)
+            if not jwt_token:
+                return Response({"error": "Failed to generate token"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            # Return user info and token
+            return Response({
+                "token": jwt_token,
+                "user": user_info
+            }, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GitHubAuthenticateView(APIView):
+    """Authenticate with GitHub username directly"""
+    def post(self, request):
+        try:
+            github_username = request.data.get('github_username')
+            if not github_username:
+                return Response({"error": "GitHub username is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Get user data from GitHub
+            github_service = GitHubService(github_username)
+            github_data = github_service.get_user_info()
+            
+            if not github_data:
+                return Response({"error": f"GitHub user '{github_username}' not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Create user info object
+            user_info = {
+                'github_username': github_username,
+                'github_id': github_data.get('id'),
+                'name': github_data.get('name'),
+                'email': github_data.get('email'),
+                'avatar_url': github_data.get('avatar_url'),
+                'bio': github_data.get('bio'),
+            }
+            
+            # Generate JWT token
+            oauth_handler = GitHubOAuthHandler()
+            jwt_token = oauth_handler.generate_jwt_token(user_info)
+            
+            return Response({
+                "token": jwt_token,
+                "user": user_info
+            }, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

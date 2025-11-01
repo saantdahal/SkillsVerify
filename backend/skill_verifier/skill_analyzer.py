@@ -1,4 +1,4 @@
-import google.generativeai as genai
+import requests
 from django.conf import settings
 import hashlib
 import json
@@ -7,8 +7,15 @@ from django.core.cache import cache
 # SkillAnalyzer class to analyze GitHub data and verify skills:
 class SkillAnalyzer:
     def __init__(self):
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel('gemini-1.5-pro-latest')
+        self.api_key = settings.OPENROUTER_API_KEY
+        self.base_url = "https://openrouter.ai/api/v1"
+        self.model = "deepseek/deepseek-chat"
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://trustchain-ibriz.vercel.app",  # Optional
+            "X-Title": "TrustChain Skills Verification",  # Optional
+        }
     
     def _get_cache_key(self, method_name, *args):
         """Generate a cache key based on method name and arguments"""
@@ -68,8 +75,22 @@ class SkillAnalyzer:
         """
         
         try:
-            response = self.model.generate_content(prompt)
-            skills_text = response.text.strip()
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.1
+            }
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=self.headers,
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            result = response.json()
+            skills_text = result["choices"][0]["message"]["content"].strip()
             
             # Clean up the response to ensure it's valid JSON
             skills_text = skills_text.replace("```json", "").replace("```", "").strip()
@@ -87,13 +108,12 @@ class SkillAnalyzer:
                 print("Error parsing AI response to JSON")
                 return []
         except Exception as e:
-            print(f"Error using Gemini API: {e}")
+            print(f"Error using DeepSeek API: {e}")
             return []
 
 # Verify skills by comparing resume skills with GitHub skills using AI, with caching
     def verify_skills_with_llm(self, resume_skills, github_skills):
         """Use LLM to intelligently compare resume skills with GitHub skills, with caching"""
-        # Create cache key based on resume skills and GitHub skills
         cache_key = self._get_cache_key("verify_skills_llm", resume_skills, github_skills)
         cached_result = cache.get(cache_key)
         
@@ -128,8 +148,22 @@ class SkillAnalyzer:
         """
         
         try:
-            response = self.model.generate_content(prompt)
-            result_text = response.text.strip()
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.1
+            }
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=self.headers,
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            result = response.json()
+            result_text = result["choices"][0]["message"]["content"].strip()
             
             # Clean up the response to ensure it's valid JSON
             result_text = result_text.replace("```json", "").replace("```", "").strip()
@@ -155,7 +189,7 @@ class SkillAnalyzer:
                 result = self.basic_skill_verification(resume_skills, github_skills)
                 return result
         except Exception as e:
-            print(f"Error using Gemini API for verification: {e}")
+            print(f"Error using DeepSeek API for verification: {e}")
             # Fallback to basic verification
             return self.basic_skill_verification(resume_skills, github_skills)
     

@@ -1,87 +1,126 @@
-import { useState } from "react";
 import { useLogin } from "@/context/UserContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Github, Loader } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
   const { login } = useLogin();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
+  const handleGitHubLogin = async () => {
+    setIsLoading(true);
     try {
-      const success = await login(email, password);
-      if (!success) {
-        setError("Invalid email or password");
+      await login(); // This will set logged in state
+      // Check if user is a recruiter and redirect accordingly
+      const userRole = sessionStorage.getItem("userRole");
+      if (userRole === "recruiter") {
+        setTimeout(() => navigate("/hrdashboard"), 500);
+      } else {
+        setTimeout(() => navigate("/upload-resume"), 500);
       }
-    } catch (err) {
-      setError("Login failed. Please try again.");
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error("Login error:", error);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Sign in to your account</CardTitle>
-          <CardDescription className="text-center">
-            Enter your email and password to access your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
+              <Github className="w-8 h-8 text-white" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                {error}
-              </div>
-            )}
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-          <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Demo credentials:</p>
-            <p>Email: any@email.com</p>
-            <p>Password: any password</p>
           </div>
-        </CardContent>
-      </Card>
+          <h2 className="text-3xl font-bold text-white mb-2">
+            Welcome to SkillVerifier
+          </h2>
+          <p className="text-slate-400">
+            Verify your skills with your GitHub profile
+          </p>
+        </div>
+
+        <div className="mt-8 space-y-6 bg-slate-900/50 backdrop-blur-sm p-8 rounded-2xl border border-slate-800/50">
+          <Button
+            onClick={handleGitHubLogin}
+            disabled={isLoading}
+            className="w-full group relative flex justify-center items-center py-3 px-4 text-base font-semibold rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all disabled:opacity-50"
+          >
+            {isLoading ? (
+              <>
+                <Loader className="w-5 h-5 mr-2 animate-spin" />
+                Redirecting to GitHub...
+              </>
+            ) : (
+              <>
+                <Github className="w-5 h-5 mr-2" />
+                Sign in with GitHub
+              </>
+            )}
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-slate-900/50 text-slate-400">
+                Or use username directly
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-300">
+              GitHub Username
+            </label>
+            <input
+              type="text"
+              placeholder="Enter your GitHub username"
+              className="w-full px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
+              id="github-username"
+            />
+            <Button
+              onClick={() => {
+                const username = (
+                  document.getElementById("github-username") as HTMLInputElement
+                )?.value;
+                if (username) {
+                  login(username);
+                }
+              }}
+              className="w-full py-2 px-4 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+            >
+              Login with Username
+            </Button>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-slate-900/50 text-slate-400">
+                Recruiter Access
+              </span>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => navigate("/hrdashboard")}
+            className="w-full py-3 px-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-lg font-semibold transition-all"
+          >
+            Sign in as Recruiter
+          </Button>
+
+          <p className="text-center text-xs text-slate-500 mt-6">
+            We only access your public GitHub profile information
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

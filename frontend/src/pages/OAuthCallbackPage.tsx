@@ -1,0 +1,104 @@
+import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLogin } from "@/context/UserContext";
+
+const OAuthCallback: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { login } = useLogin();
+  const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    const handleCallback = async () => {
+      try {
+        const code = searchParams.get("code");
+        const state = searchParams.get("state");
+
+        if (!code) {
+          setError("No authorization code received");
+          setTimeout(() => navigate("/login"), 2000);
+          return;
+        }
+
+        // Verify state matches
+        const storedState = sessionStorage.getItem("oauth_state");
+        if (state !== storedState) {
+          setError("State mismatch - possible CSRF attack");
+          setTimeout(() => navigate("/login"), 2000);
+          return;
+        }
+
+        // Exchange code for token with backend
+        const response = await fetch(
+          "http://127.0.0.1:8000/api/auth/github/callback/",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ code }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          setError(errorData.error || "Authentication failed");
+          setTimeout(() => navigate("/login"), 2000);
+          return;
+        }
+
+        const data = await response.json();
+
+        // Store user data and token
+        const userData = data.user;
+        sessionStorage.setItem("userDetails", JSON.stringify(userData));
+        sessionStorage.setItem("token", data.token);
+        sessionStorage.setItem("isLoggedIn", "true");
+
+        // Check if user is a recruiter and redirect to HR dashboard
+        const userRole = sessionStorage.getItem("userRole");
+        if (userRole === "recruiter") {
+          navigate("/hrdashboard");
+        } else {
+          // Redirect to upload page for regular users
+          navigate("/upload-resume");
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "An unexpected error occurred"
+        );
+        setTimeout(() => navigate("/login"), 2000);
+      }
+    };
+
+    handleCallback();
+  }, [searchParams, navigate, login]);
+
+  return (
+    <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-950 to-blue-950">
+      <div className="text-center">
+        {error ? (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-6 max-w-md">
+            <h2 className="text-xl font-bold text-red-400 mb-2">
+              Authentication Error
+            </h2>
+            <p className="text-red-300">{error}</p>
+            <p className="text-sm text-slate-400 mt-4">
+              Redirecting to login...
+            </p>
+          </div>
+        ) : (
+          <div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+            <h2 className="text-xl font-bold text-white">
+              Authenticating with GitHub...
+            </h2>
+            <p className="text-slate-400 mt-2">Please wait while we verify your account</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default OAuthCallback;

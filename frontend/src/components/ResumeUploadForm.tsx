@@ -81,7 +81,7 @@ const ResumeUploadForm: React.FC = () => {
       
       const formData = new FormData();
       formData.append('resume_pdf', file);
-      formData.append('github_username', 'saantdahal'); // Default value as requested
+      // GitHub username will be extracted from the resume by the backend
       
       const response = await axios.post<VerificationResponse>(
         'http://127.0.0.1:8000/api/verify-skills/',
@@ -98,8 +98,12 @@ const ResumeUploadForm: React.FC = () => {
       
       setIsSubmitting(false);
       
-      // Redirect to verification report page
+      // Store the verification response in localStorage
       if (response.data && response.data.verification_id) {
+        localStorage.setItem('blobObject', JSON.stringify({ 
+          blobId: response.data.verification_id 
+        }));
+        localStorage.setItem('verificationData', JSON.stringify(response.data));
         navigate(`/verification/${response.data.verification_id}`);
       }
     } catch (err) {

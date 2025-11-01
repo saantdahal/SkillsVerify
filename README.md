@@ -111,3 +111,5 @@ requests
 ---
 
 Made with ❤ at 100X Nepal Hackathon
+santosh@IdeaPad:~/SanTosh/trustchain_ibriz/backend$ source env/bin/activate
+(env) santosh@IdeaPad:~/SanTosh/trustchain_ibriz/backend$ python manage.py runserver

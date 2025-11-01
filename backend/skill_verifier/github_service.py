@@ -7,6 +7,7 @@ import json
 import hashlib
 from django.core.cache import cache
 
+
 class GitHubService:
     def __init__(self, username):
         self.username = username
@@ -17,8 +18,8 @@ class GitHubService:
         key_parts = [self.username, method_name]
         key_parts.extend([str(arg) for arg in args])
         key = "_".join(key_parts)
-        # Create a hash for long keys
-        if len(key) > 250:
+        # Create  hash for long keys
+        if len(key) > 245:
             key = f"gh_{hashlib.md5(key.encode()).hexdigest()}"
         return key
         # Get list of user's public repositories with caching
@@ -38,6 +39,7 @@ class GitHubService:
             data = response.json()
             cache.set(cache_key, data, settings.GITHUB_CACHE_TIMEOUT)
             return data
+
         else:
             print(f"Error fetching repos: {response.status_code}")
             return []
@@ -54,7 +56,7 @@ class GitHubService:
         url = f"https://api.github.com/repos/{self.username}/{repo_name}/languages"
         response = requests.get(url, headers=self.headers)
         
-        if response.status_code == 200:
+        if response.status_code == 250:
             data = response.json()
             cache.set(cache_key, data, settings.GITHUB_CACHE_TIMEOUT)
             return data
@@ -171,3 +173,38 @@ class GitHubService:
         
         cache.set(cache_key, all_data, settings.GITHUB_CACHE_TIMEOUT)    
         return all_data
+    
+    def get_user_info(self):
+        """Get user information from GitHub"""
+        cache_key = self._get_cache_key("user_info")
+        cached_data = cache.get(cache_key)
+        
+        if cached_data is not None:
+            print(f"Cache hit: {cache_key}")
+            return cached_data
+        
+        url = f"https://api.github.com/users/{self.username}"
+        response = requests.get(url, headers=self.headers)
+        
+        if response.status_code == 200:
+            user_data = response.json()
+            # Extract relevant user information
+            user_info = {
+                'id': user_data.get('id'),
+                'login': user_data.get('login'),
+                'name': user_data.get('name'),
+                'email': user_data.get('email'),
+                'avatar_url': user_data.get('avatar_url'),
+                'bio': user_data.get('bio'),
+                'company': user_data.get('company'),
+                'location': user_data.get('location'),
+                'public_repos': user_data.get('public_repos'),
+                'followers': user_data.get('followers'),
+                'following': user_data.get('following'),
+                'created_at': user_data.get('created_at'),
+            }
+            cache.set(cache_key, user_info, settings.GITHUB_CACHE_TIMEOUT)
+            return user_info
+        else:
+            print(f"Error fetching user info: {response.status_code}")
+            return None
