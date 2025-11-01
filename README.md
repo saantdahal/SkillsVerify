@@ -84,7 +84,6 @@ VITE_APP_NETWORK=testnet
 
 ## 🔁 Flow / Architecture
 
-
 - Login:: login with githuboauth
 - LLMs: Analyze GitHub repo locally (clone & scan).
 
