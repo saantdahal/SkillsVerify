@@ -9,16 +9,11 @@ import { Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ResumeUploadForm from "@/components/ResumeUploadForm";
-// import ResumeUploadForm from "../..//components/ResumeUploadForm";
 
 const HomePage = () => {
   const { isLoggedIn, userDetails } = useLogin();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  // const [userContentIds, setUserContentIds] = useState<string[]>([]);
-  // const [userContentObjects, setUserContentObjects] = useState<SuiObjectData[]>(
-  //   []
-  // );
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
@@ -47,33 +42,33 @@ const HomePage = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-6">
-          {isLoggedIn ? (
-            <>
-              {isRegistered ? (
-                <UploadPanel />
-              ) : (
-               <ResumeUploadForm/>
-              )}
-            </>
-          ) : (
-            <LoggedOutView />
-          )}
-        </div>
-
-        {isLoggedIn && (
-          <div className="lg:col-span-4 space-y-6">
-            <div className="sticky">
-              {/* <Leaderboard /> */}
-              <div className="">
-                {/* <AskQuestions /> */}
+      {isLoggedIn ? (
+        isRegistered ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-8 space-y-6">
+              <UploadPanel />
+            </div>
+            <div className="lg:col-span-4 space-y-6">
+              <div className="sticky">
+                {/* <Leaderboard /> */}
+                <div className="">
+                  {/* <AskQuestions /> */}
+                </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        ) : (
+          <div className="flex justify-center w-full">
+            <ResumeUploadForm />
+          </div>
+        )
+      ) : (
 
+    <div className="flex justify-center w-full">
+      <LoggedOutView />
+    </div>
+
+      )}
     </div>
   );
 };

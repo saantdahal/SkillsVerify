@@ -9,7 +9,7 @@ import React, {
 interface LoginContextType {
   isLoggedIn: boolean;
   userDetails: UserDetails;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: () => void;
   logOut: () => void;
   loading: boolean;
 }
@@ -19,6 +19,7 @@ const UserContext = createContext<LoginContextType | undefined>(undefined);
 interface UserDetails {
   email: string;
   name: string;
+  address?: string;
 }
 
 interface UserProviderProps {
@@ -37,30 +38,23 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   );
   const [loading, setLoading] = useState<boolean>(true);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      // For now, use simple authentication (replace with actual API call later)
-      // This is just a demo - in production you'd call your Django backend
-      if (email && password) {
-        const userData = {
-          email: email,
-          name: email.split('@')[0], // Simple name extraction
-        };
-
-        setUserDetails(userData);
-        setIsLoggedIn(true);
-        sessionStorage.setItem("userDetails", JSON.stringify(userData));
-        sessionStorage.setItem("isLoggedIn", "true");
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error("Login error:", error);
-      return false;
-    }
+  const login = async () => {
+    // Simple auth: just set logged in with mock user
+    const userData = {
+      email: "user@example.com",
+      name: "Demo User",
+    };
+    setUserDetails(userData);
+    setIsLoggedIn(true);
+    sessionStorage.setItem("userDetails", JSON.stringify(userData));
+    sessionStorage.setItem("isLoggedIn", "true");
   };
 
-  const logOut = () => {
+  const logOut = async () => {
+    clearStates();
+  };
+
+  const clearStates = () => {
     setIsLoggedIn(false);
     setUserDetails(UserDetailsInitialValues);
     sessionStorage.clear();
@@ -87,7 +81,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   return (
     <UserContext.Provider value={contextValue}>
-      {children}
+      {loading ? (
+        <div className="flex h-screen items-center justify-center bg-background">
+          <div className="text-xl">Logging in...</div>
+        </div>
+      ) : (
+        children
+      )}
     </UserContext.Provider>
   );
 };

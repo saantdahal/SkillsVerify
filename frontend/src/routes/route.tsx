@@ -5,6 +5,7 @@ import Layout from "../layout/Layout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
 import VerificationReportPage from "@/pages/VerificationReportPage";
+import HRDashboard from "@/pages/HrDashboard";
 
 export const routes = createBrowserRouter([
   {
@@ -29,6 +30,12 @@ export const routes = createBrowserRouter([
       },
     ],
   },
+
+  {
+    path: "/hrdashboard/manish",
+    element: <HRDashboard />,
+  },
+
 ]);
 
 export default routes;

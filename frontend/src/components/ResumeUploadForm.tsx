@@ -81,7 +81,7 @@ const ResumeUploadForm: React.FC = () => {
       
       const formData = new FormData();
       formData.append('resume_pdf', file);
-      formData.append('github_username', 'saantdahal'); // Default value as requested
+      formData.append('github_username', 'sacarsacar'); // Default value as requested
       
       const response = await axios.post<VerificationResponse>(
         'http://127.0.0.1:8000/api/verify-skills/',
