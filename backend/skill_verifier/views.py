@@ -26,9 +26,11 @@ class VerifySkillsView(APIView):
             parser = ResumeParser()
             resume_data = parser.parse_resume(resume_file)
             resume_skills = resume_data['skills']
+            print(f"\n[Resume Parser] Extracted skills from resume: {resume_skills}")
             
             # Extract GitHub username from resume
             github_username = resume_data.get('github_username')
+            print(f"[Resume Parser] Extracted GitHub username: {github_username}")
             
             # If GitHub username is not found in resume, check if it's provided in the request
             if not github_username:
@@ -50,19 +52,34 @@ class VerifySkillsView(APIView):
             # Step 2: Get GitHub data
             github_service = GitHubService(github_username)
             github_data = github_service.get_all_github_data()
+            print(f"\n{'='*60}")
+            print(f"GITHUB DATA FOR USER: {github_username}")
+            print(f"{'='*60}")
+            print(f"GitHub Data: {json.dumps(github_data, indent=2, default=str)}")
+            print(f"{'='*60}\n")
             
             # Step 3: Analyze GitHub skills
             analyzer = SkillAnalyzer()
             github_skills = analyzer.analyze_github_skills(github_data)
+            print(f"\nGitHub Skills Extracted: {github_skills}\n")
             
             # Step 4: Verify skills using LLM for intelligent comparison
             verification_result = analyzer.verify_skills_with_llm(resume_skills, github_skills)
+            print(f"\n[Skill Analyzer] LLM Verification Result:")
+            print(f"Verified Skills: {json.dumps(verification_result.get('verified_skills', []), indent=2)}")
+            print(f"Unverified Skills: {verification_result.get('unverified_skills', [])}")
+            print(f"Additional Skills: {verification_result.get('additional_skills', [])}")
+            print(f"Verification Percentage: {verification_result.get('verification_percentage')}%\n")
             
             # Step 4b: Calculate professional strength metrics and enhance results
             verification_result = analyzer.calculate_strength_metrics(
                 verification_result,
                 len(resume_skills)
             )
+            print(f"[Skill Analyzer] Enhanced with strength metrics:")
+            print(f"Strength per Skill: {json.dumps(verification_result.get('strength_per_skill', {}), indent=2)}")
+            print(f"Average Strength: {verification_result.get('average_strength')}/10")
+            print(f"Experience Level: {verification_result.get('experience_level')}%\n")
             
             # Step 5: Generate verification hash based on the verification result
             # Pass the full verification_result dict; the generator will extract the

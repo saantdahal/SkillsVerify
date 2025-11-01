@@ -150,16 +150,20 @@ class GitHubService:
         if cached_data is not None:
             print(f"Cache hit: {cache_key}")
             return cached_data
-            
+        
+        print(f"\n[GitHub Service] Fetching data for user: {self.username}")
         repos = self.get_user_repos()
+        print(f"[GitHub Service] Found {len(repos)} total repositories, processing first {max_repos}")
+        
         all_data = {
             'username': self.username,
             'repos': []
         }
         
         # Only process a limited number of repos for performance
-        for repo in repos[:max_repos]:
+        for idx, repo in enumerate(repos[:max_repos]):
             repo_name = repo.get('name')
+            print(f"[GitHub Service] Processing repo {idx+1}/{min(len(repos), max_repos)}: {repo_name}")
             repo_data = self.collect_repo_data(repo_name)
             # Add metadata from the repo listing
             repo_data.update({
@@ -170,6 +174,9 @@ class GitHubService:
                 'updated_at': repo.get('updated_at')
             })
             all_data['repos'].append(repo_data)
+        
+        print(f"[GitHub Service] Successfully collected data for {len(all_data['repos'])} repositories")
+        print(f"[GitHub Service] All GitHub Data collected:\n{json.dumps(all_data, indent=2, default=str)}\n")
         
         cache.set(cache_key, all_data, settings.GITHUB_CACHE_TIMEOUT)    
         return all_data

@@ -19,6 +19,11 @@ interface VerificationResponse {
     additional_skills: string[];
     verification_percentage: number;
     summary: string;
+    strength_per_skill?: Record<string, number>;
+    experience_level?: number;
+    average_strength?: number;
+    verified_count?: number;
+    total_skills?: number;
   };
   hash: string;
   verification_id: number;
@@ -99,8 +104,21 @@ const ResumeUploadForm: React.FC = () => {
         }
       );
       
-      // Log the response to console
-      console.log('API Response:', response.data);
+      // Log the response to console with detailed formatting
+      console.log('✅ API Response Received:', response.data);
+      console.log('📊 Verification Details:', {
+        github_username: response.data.github_username,
+        resume_skills_count: response.data.resume_skills.length,
+        github_skills_count: response.data.github_skills.length,
+        verified_count: response.data.verification_result.verified_skills.length,
+        unverified_count: response.data.verification_result.unverified_skills.length,
+        additional_skills: response.data.verification_result.additional_skills,
+        verification_percentage: response.data.verification_result.verification_percentage,
+        average_strength: response.data.verification_result.average_strength,
+        experience_level: response.data.verification_result.experience_level,
+        verification_id: response.data.verification_id
+      });
+      console.log('🧬 Full Verification Result:', response.data.verification_result);
       
       setIsSubmitting(false);
       
