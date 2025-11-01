@@ -1,19 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { CheckCircle, XCircle, AlertCircle, ChevronRight, Github, Download, ArrowLeft, Zap, BarChart2, Award } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, ChevronRight, Github, Download, ArrowLeft, Zap, BarChart2 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import StrengthPerSkillSection from "@/components/StrengthPerSkillSection";
+
+interface VerifiedSkill {
+  skill: string;
+  evidence: string[];
+  reasoning: string;
+}
 
 interface VerificationResponse {
   github_username: string;
   resume_skills: string[];
   github_skills: string[];
   verification_result: {
-    verified_skills: string[];
+    verified_skills: VerifiedSkill[];
     unverified_skills: string[];
     additional_skills: string[];
     verification_percentage: number;
-    strength_per_skill: Record<string, number>;
-    explanation: string;
+    strength_per_skill?: Record<string, number>;
+    summary: string;
+    experience_level?: number;
+    average_strength?: number;
+    verified_count?: number;
+    total_skills?: number;
   };
   hash: string;
   created_at?: string;
@@ -166,10 +176,28 @@ const VerificationReportPage: React.FC = () => {
     }
   ];
 
-  // Calculate the overall strength score
-  const overallStrength = data.verification_result.strength_per_skill
-    ? calculateOverallStrength(data.verification_result.strength_per_skill)
-    : 0;
+  // Calculate the overall strength score - used for fallback if average_strength not available
+  calculateOverallStrength(data.verification_result.strength_per_skill || {});
+
+  // Get strength label
+  const getStrengthLabel = (strength: number): string => {
+    if (strength >= 8.5) return "Excellent";
+    if (strength >= 7) return "Very Good";
+    if (strength >= 5.5) return "Good";
+    if (strength >= 4) return "Fair";
+    return "Developing";
+  };
+
+  // Helper function to determine experience level based on strength data
+  const getExperienceLevel = (strengthData: Record<string, number> | undefined) => {
+    if (!strengthData || Object.keys(strengthData).length === 0) return 50; // Default middle
+
+    const sum = Object.values(strengthData).reduce((acc, val) => acc + val, 0);
+    const avg = sum / Object.keys(strengthData).length;
+
+    // Convert average strength (1-10) to percentage (0-100)
+    return Math.min(Math.max(avg * 10, 0), 100);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-6">
@@ -219,32 +247,39 @@ const VerificationReportPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Verification Score */}
+            {/* Verification Score - More Professional */}
             <div className={`rounded-xl p-4 border border-gray-700 bg-gradient-to-br ${getGradientClass(data.verification_result.verification_percentage)}`}>
               <p className="text-gray-400 text-sm mb-1">Verification Score</p>
-              <div className="flex items-center">
+              <div className="flex flex-col">
                 <p className={`text-2xl font-bold ${getScoreColor(data.verification_result.verification_percentage)}`}>
-                  {data.verification_result.verification_percentage.toFixed(2)}%
+                  {data.verification_result.verification_percentage.toFixed(1)}%
                 </p>
-
+                <p className="text-xs text-gray-500 mt-1">
+                  {(data.verification_result.verified_count ?? (data.verification_result.verified_skills?.length || 0))}/{(data.verification_result.total_skills ?? data.resume_skills.length)}
+                </p>
               </div>
             </div>
 
-            {/* Skills Count */}
+            {/* Skills Count - More Detailed */}
             <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
               <p className="text-gray-400 text-sm mb-1">Skills Analyzed</p>
-              <div className="flex items-center">
-                <p className="text-2xl font-bold text-blue-400">{data.resume_skills.length}</p>
-                <p className="ml-2 text-gray-400">from resume</p>
+              <div className="flex flex-col">
+                <p className="text-2xl font-bold text-blue-400">{data.verification_result.total_skills ?? data.resume_skills.length}</p>
+                <div className="flex gap-2 mt-1 text-xs">
+                  <span className="text-green-400">✓ {(data.verification_result.verified_count ?? (data.verification_result.verified_skills?.length || 0))}</span>
+                  <span className="text-red-400">✗ {(data.verification_result.unverified_skills?.length || 0)}</span>
+                </div>
               </div>
             </div>
 
-            {/* Overall Strength */}
+            {/* Overall Strength - Professional Rating */}
             <div className="bg-gradient-to-br from-purple-900/20 to-purple-800/10 rounded-xl p-4 border border-gray-700">
               <p className="text-gray-400 text-sm mb-1">Overall Strength</p>
-              <div className="flex items-center">
-                <p className="text-2xl font-bold text-purple-400">{overallStrength}/10</p>
-                <Award className={`ml-2 w-5 h-5 text-purple-400 ${overallStrength >= 7 ? 'fill-purple-400' : ''}`} />
+              <div className="flex flex-col">
+                <p className="text-2xl font-bold text-purple-400">{(data.verification_result.average_strength ?? 0).toFixed(1)}/10</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {getStrengthLabel(data.verification_result.average_strength ?? 0)}
+                </p>
               </div>
             </div>
           </div>
@@ -275,7 +310,7 @@ const VerificationReportPage: React.FC = () => {
             {/* Explanation Card */}
             <div className="bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800 p-6 mb-8">
               <h2 className="text-xl font-bold mb-4">Analysis Summary</h2>
-              <p className="text-gray-300 leading-relaxed">{data.verification_result.explanation}</p>
+              <p className="text-gray-300 leading-relaxed">{data.verification_result.summary}</p>
             </div>
 
             {/* Skills Comparison */}
@@ -344,11 +379,27 @@ const VerificationReportPage: React.FC = () => {
                     <div className="p-4 bg-gray-800/30">
                       {category.skills.length > 0 ? (
                         <div className="space-y-2">
-                          {category.skills.map((skill, idx) => (
-                            <div key={idx} className="py-2 px-3 bg-gray-800/50 rounded-lg text-sm">
-                              {skill}
-                            </div>
-                          ))}
+                          {category.skills.map((skill, idx) => {
+                            // Handle both string and VerifiedSkill object types
+                            const skillName = typeof skill === 'string' ? skill : skill.skill;
+                            const isVerifiedSkill = typeof skill === 'object' && skill !== null && 'evidence' in skill;
+                            
+                            return (
+                              <div key={idx} className="py-2 px-3 bg-gray-800/50 rounded-lg text-sm">
+                                <div>{skillName}</div>
+                                {isVerifiedSkill && (
+                                  <>
+                                    <div className="text-xs text-gray-400 mt-1">
+                                      <strong>Evidence:</strong> {(skill as VerifiedSkill).evidence.join(', ')}
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      {(skill as VerifiedSkill).reasoning}
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="text-center py-6 text-gray-400 text-sm">
@@ -388,7 +439,7 @@ const VerificationReportPage: React.FC = () => {
                     <div className="w-full bg-gray-800/50 h-3 rounded-full overflow-hidden mb-3">
                       <div
                         className="h-full bg-gradient-to-r from-blue-500 to-blue-400"
-                        style={{ width: `${getExperienceLevel(data.verification_result.strength_per_skill)}%` }}
+                        style={{ width: `${getExperienceLevel(data.verification_result.strength_per_skill || {})}%` }}
                       />
                     </div>
 
@@ -455,15 +506,5 @@ const VerificationReportPage: React.FC = () => {
   );
 };
 
-// Helper function to determine experience level based on strength data
-const getExperienceLevel = (strengthData: Record<string, number>) => {
-  if (!strengthData || Object.keys(strengthData).length === 0) return 50; // Default middle
-
-  const sum = Object.values(strengthData).reduce((acc, val) => acc + val, 0);
-  const avg = sum / Object.keys(strengthData).length;
-
-  // Convert average strength (1-10) to percentage (0-100)
-  return Math.min(Math.max(avg * 10, 0), 100);
-};
 
 export default VerificationReportPage;

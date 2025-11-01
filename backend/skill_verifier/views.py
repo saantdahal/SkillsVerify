@@ -58,10 +58,19 @@ class VerifySkillsView(APIView):
             # Step 4: Verify skills using LLM for intelligent comparison
             verification_result = analyzer.verify_skills_with_llm(resume_skills, github_skills)
             
-            # Step 5: Generate verification hash based on verified skills
+            # Step 4b: Calculate professional strength metrics and enhance results
+            verification_result = analyzer.calculate_strength_metrics(
+                verification_result,
+                len(resume_skills)
+            )
+            
+            # Step 5: Generate verification hash based on the verification result
+            # Pass the full verification_result dict; the generator will extract the
+            # 'verified_skills' list internally. Previously we passed the list which
+            # caused a "'list' object has no attribute 'get'" error.
             hash_value = analyzer.generate_verification_hash(
-                github_username, 
-                verification_result['verified_skills']
+                github_username,
+                verification_result
             )
             
             # Step 6: Save results to database

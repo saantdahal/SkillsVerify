@@ -3,16 +3,22 @@ import { Upload, CheckCircle, X, File, FileText, Loader } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+interface VerifiedSkill {
+  skill: string;
+  evidence: string[];
+  reasoning: string;
+}
+
 interface VerificationResponse {
   github_username: string;
   resume_skills: string[];
   github_skills: string[];
   verification_result: {
-    verified_skills: string[];
+    verified_skills: VerifiedSkill[];
     unverified_skills: string[];
     additional_skills: string[];
     verification_percentage: number;
-    explanation: string;
+    summary: string;
   };
   hash: string;
   verification_id: number;
